@@ -22,9 +22,21 @@ async for event in result.stream_events():
 
 | event.type | 설명 |
 |------------|------|
-| `raw_response_event` | LLM에서 직접 전달되는 토큰 단위 스트리밍 이벤트. 응답 생성 또는 도구 호출 결정 시 발생 |
+| `raw_response_event` | LLM에서 직접 전달되는 토큰 단위 스트리밍 이벤트. `event.data.type`으로 구체 유형 구분 (아래 참고) |
 | `run_item_stream_event` | "메시지 완성", "도구 호출", "도구 결과" 등 **단위 작업이 끝났을 때**. `event.name`으로 어떤 일인지 구분 |
 | `agent_updated_stream_event` | 현재 실행 중인 Agent가 변경됐을 때 (handoff 시점 등) |
+
+### raw_response_event와 event.data (response.output_text.delta 등)
+
+`raw_response_event` 안의 `event.data`로 **LLM이 지금 뭘 생성하고 있는지** 구체적으로 알 수 있습니다.
+
+#### event.data.type 종류
+
+| event.data.type | 의미 | event.data.delta |
+|-----------------|------|------------------|
+| `response.output_text.delta` | LLM이 **사용자에게 보낼 텍스트**를 한 토큰씩 생성할 때 | 새로 생성된 텍스트 조각 (문자열) |
+| `response.function_call_arguments.delta` | LLM이 **도구 호출 인자**(JSON)를 한 토큰씩 생성할 때 | 새로 생성된 인자 조각 (문자열) |
+| `response.completed` | 해당 응답이 **완료**됐을 때 | — |
 
 ### run_item_stream_event 쉽게 이해하기
 
@@ -32,15 +44,6 @@ async for event in result.stream_events():
 
 `raw_response_event`가 토큰 한 글자씩 흘러오는 **저수준** 이벤트라면,  
 `run_item_stream_event`는 **"메시지 하나 완성됐어", "도구 호출했어", "도구 결과 왔어"** 같은 **단위 작업이 끝났을 때** 오는 이벤트입니다.
-
-#### 구조
-
-```python
-if event.type == "run_item_stream_event":
-    # event.name  → 어떤 종류의 일이 끝났는지
-    # event.item  → 그 일에 대한 상세 정보
-    print(event.name, event.item)
-```
 
 #### event.name — 어떤 일이 끝났는지
 
